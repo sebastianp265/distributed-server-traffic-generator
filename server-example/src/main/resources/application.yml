@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: server-example
+
+  h2:
+    console:
+      enabled: true
+
+  datasource:
+    url: jdbc:h2:mem:example-db
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
