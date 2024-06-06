@@ -2,9 +2,13 @@ package edu.pw.controller;
 
 import edu.pw.common.SingleTestResult;
 import edu.pw.common.WorkerService;
+import edu.pw.exceptions.remote.WorkerAccessException;
+import edu.pw.exceptions.remote.WorkerCommunicationException;
+import edu.pw.exceptions.remote.WorkerNotBoundException;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
+import java.rmi.AccessException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -16,6 +20,8 @@ import java.util.List;
 import java.util.concurrent.*;
 
 public class ControllerService implements AutoCloseable {
+    private static final String WORKER_NAME = "worker";
+
     private final ExecutorService threadPool = Executors.newCachedThreadPool();
     private final CompletionService<List<SingleTestResult>> completionService
             = new ExecutorCompletionService<>(threadPool);
@@ -23,17 +29,28 @@ public class ControllerService implements AutoCloseable {
     private final List<URI> workerURIs;
     private final List<WorkerService> workers;
 
-    public ControllerService(List<URI> workerURIs) throws RemoteException, NotBoundException {
+    public ControllerService(List<URI> workerURIs)
+            throws WorkerNotBoundException, WorkerAccessException, WorkerCommunicationException {
+
         this.workerURIs = workerURIs;
 
         workers = new ArrayList<>(workerURIs.size());
 
         for (URI workerURI : workerURIs) {
-            Registry registry = LocateRegistry.getRegistry(workerURI.getHost(), workerURI.getPort());
-            WorkerService worker = (WorkerService) registry.lookup("worker");
+            try {
+                Registry registry = LocateRegistry.getRegistry(workerURI.getHost(), workerURI.getPort());
+                WorkerService worker = (WorkerService) registry.lookup(WORKER_NAME);
 
-            workers.add(worker);
+                workers.add(worker);
+            } catch (NotBoundException e) {
+                throw new WorkerNotBoundException(e, workerURI);
+            } catch (AccessException e) {
+                throw new WorkerAccessException(e, workerURI);
+            } catch (RemoteException e) {
+                throw new WorkerCommunicationException(e, workerURI);
+            }
         }
+
     }
 
     public List<SingleTestResult> performTests(HttpRequest requestToMake, int numOfRequests)

@@ -14,13 +14,14 @@ import java.util.logging.Logger;
 public class Worker {
 
     private static final Logger logger = Logger.getLogger(Worker.class.getName());
+    private static final String WORKER_NAME = "worker";
 
     public static void main(String[] args) {
         try {
             ParsedArgs parsedArgs = ArgsParser.parse(args);
             WorkerServiceImpl workerServiceImpl = new WorkerServiceImpl();
             Registry registry = LocateRegistry.createRegistry(parsedArgs.port());
-            registry.rebind("worker", workerServiceImpl);
+            registry.rebind(WORKER_NAME, workerServiceImpl);
             logger.info("Worker ready.");
         } catch (ParseException e) {
             throw new RuntimeException(e);
