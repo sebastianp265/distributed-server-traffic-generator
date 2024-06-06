@@ -19,31 +19,17 @@ public class SerializableHttpRequest extends HttpRequest implements Serializable
     private String bodyString;
     private byte[] bodyBytes;
 
-    public SerializableHttpRequest(URI uri, String method, Map<String, List<String>> headerMap) {
-        this.uri = uri;
-        this.method = method;
-        this.headerMap = headerMap;
-    }
-
     public SerializableHttpRequest(URI uri, String method, Map<String, List<String>> headerMap, String bodyString) {
-        if (bodyString == null) {
-            throw new IllegalArgumentException("bodyString cannot be null");
-        }
         this.uri = uri;
         this.method = method;
         this.headerMap = headerMap;
-
         this.bodyString = bodyString;
     }
 
     public SerializableHttpRequest(URI uri, String method, Map<String, List<String>> headerMap, byte[] bodyBytes) {
-        if (bodyBytes == null) {
-            throw new IllegalArgumentException("bodyBytes cannot be null");
-        }
         this.uri = uri;
         this.method = method;
         this.headerMap = headerMap;
-
         this.bodyBytes = bodyBytes;
     }
 

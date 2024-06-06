@@ -23,7 +23,6 @@ import java.util.logging.Level;
 public class WorkerServiceImpl extends UnicastRemoteObject implements WorkerService {
 
     private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-    private final DateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
     private static final Logger logger = Logger.getLogger(WorkerServiceImpl.class.getName());
 
     public WorkerServiceImpl() throws RemoteException {
@@ -34,7 +33,8 @@ public class WorkerServiceImpl extends UnicastRemoteObject implements WorkerServ
     public List<SingleTestResult> measureRequestsProcessingTime(URI workerURI,
                                                                 HttpRequest httpRequestToMake,
                                                                 int numOfRequests) throws RemoteException {
-
+        DateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
+        
         List<SingleTestResult> results = new LinkedList<>();
 
         try (HttpClient client = HttpClient.newHttpClient()) {
