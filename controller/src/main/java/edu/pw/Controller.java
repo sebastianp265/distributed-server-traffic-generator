@@ -10,9 +10,7 @@ import edu.pw.parser.ParsedArgs;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.ParseException;
 
-import java.net.http.HttpRequest;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -22,18 +20,19 @@ public class Controller {
     private static final String CMD_LINE_SYNTAX = "java -jar controller.jar";
 
     public static void main(String[] args) {
-        if(ArgsParser.isHelpOptionPresent(args)) {
+        if (ArgsParser.isHelpOptionPresent(args)) {
             helpFormatter.printHelp(CMD_LINE_SYNTAX, ArgsParser.getOptions(), true);
+            System.exit(0);
         }
 
         try {
             ParsedArgs parsedArgs = ArgsParser.parse(args);
 
             try (ControllerService controllerService = new ControllerService(parsedArgs.workerURIs())) {
-                HttpRequest httpRequest = new SerializableHttpRequest(
+                SerializableHttpRequest httpRequest = new SerializableHttpRequest(
                         parsedArgs.serverToTestURI(),
                         parsedArgs.httpMethod(),
-                        Collections.emptyMap(),
+                        parsedArgs.headers(),
                         parsedArgs.bodyString()
                 );
                 List<SingleTestResult> results = controllerService.performTests(httpRequest, parsedArgs.numOfRequests());

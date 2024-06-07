@@ -33,6 +33,14 @@ public class SerializableHttpRequest extends HttpRequest implements Serializable
         this.bodyBytes = bodyBytes;
     }
 
+    public String getBodyString() {
+        return bodyString;
+    }
+
+    public Map<String, List<String>> getHeaderMap() {
+        return headerMap;
+    }
+
     @Override
     public URI uri() {
         return uri;

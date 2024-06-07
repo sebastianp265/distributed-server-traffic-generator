@@ -3,6 +3,7 @@ package edu.pw.worker;
 import edu.pw.Worker;
 import edu.pw.common.SingleTestResult;
 import edu.pw.common.WorkerService;
+import edu.pw.common.requests.SerializableHttpRequest;
 
 import java.io.IOException;
 import java.net.URI;
@@ -16,14 +17,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.logging.Logger;
-import java.util.logging.Level;
-
 
 public class WorkerServiceImpl extends UnicastRemoteObject implements WorkerService {
 
     private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-    private static final Logger logger = Logger.getLogger(WorkerServiceImpl.class.getName());
 
     public WorkerServiceImpl() throws RemoteException {
         super();
@@ -31,15 +28,21 @@ public class WorkerServiceImpl extends UnicastRemoteObject implements WorkerServ
 
     @Override
     public List<SingleTestResult> measureRequestsProcessingTime(URI workerURI,
-                                                                HttpRequest httpRequestToMake,
+                                                                SerializableHttpRequest httpRequestToMake,
                                                                 int numOfRequests) throws RemoteException {
+        System.out.println("Started processing...");
+        System.out.println("Will be sending request with:");
+        System.out.println("URI = " + httpRequestToMake.uri().toString());
+        System.out.println("Request = " + httpRequestToMake.method());
+        System.out.println("Headers = " + httpRequestToMake.getHeaderMap());
+        System.out.println("Body = " + httpRequestToMake.getBodyString());
+        System.out.println("Num of requests = " + numOfRequests);
         DateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
-        
+
         List<SingleTestResult> results = new LinkedList<>();
 
         try (HttpClient client = HttpClient.newHttpClient()) {
             for (int i = 0; i < numOfRequests; i++) {
-                logger.log(Level.FINE, "Sending request number {0}", i);
 
                 Date dateAtTestStart = new Date();
 
@@ -61,6 +64,7 @@ public class WorkerServiceImpl extends UnicastRemoteObject implements WorkerServ
             throw new RemoteException(e.toString());
         }
 
+        System.out.println("Finished processing");
         return results;
     }
 }

@@ -1,10 +1,10 @@
 package edu.pw.parser;
 
+import edu.pw.exceptions.parser.HeadersParseException;
 import org.apache.commons.cli.*;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class ArgsParser {
 
@@ -40,37 +40,55 @@ public class ArgsParser {
 
         String httpMethod = commandLine.getOptionValue("m");
 
+        String headersString = commandLine.getOptionValue("H");
+        Map<String, List<String>> headers = headersString != null ? getHeadersMap(headersString) : Collections.emptyMap();
+
         String bodyString = commandLine.getOptionValue("b");
 
-        return new ParsedArgs(workerURIs, serverURI, numOfRequests, httpMethod, bodyString);
+        return new ParsedArgs(workerURIs, serverURI, numOfRequests, httpMethod, headers, bodyString);
+    }
+
+    private static Map<String, List<String>> getHeadersMap(String headersString) throws HeadersParseException {
+        Map<String, List<String>> headersMap = new HashMap<>();
+
+        headersString = headersString.trim();
+        String[] headers = headersString.split(";");
+
+        for (String header : headers) {
+            String[] nameValuesPair = header.split(":");
+            if (nameValuesPair.length != 2) {
+                throw new HeadersParseException(headersString);
+            }
+
+            String name = nameValuesPair[0].trim();
+            String[] values = nameValuesPair[1].trim().split(",");
+            for (int j = 0; j < values.length; j++) {
+                values[j] = values[j].trim();
+            }
+
+            headersMap.put(name, List.of(values));
+        }
+
+        return headersMap;
     }
 
     public static boolean isHelpOptionPresent(String[] args) {
-        Option helpOption = getHelpOption();
-
-        Options options = new Options();
-        options.addOption(helpOption);
-
-        CommandLineParser parser = new DefaultParser();
-        try {
-            CommandLine commandLine = parser.parse(options, args);
-            return commandLine.hasOption("h");
-        } catch (ParseException e) {
-            return false;
+        for(String arg : args) {
+            if(arg.equals("-h") || arg.equals("--help")) {
+                return true;
+            }
         }
+
+        return false;
     }
 
-    private static Option getHelpOption() {
-        return new Option(
+    public static Options getOptions() {
+        Option helpOption = new Option(
                 "h",
                 "help",
                 false,
                 "print this message"
         );
-    }
-
-    public static Options getOptions() {
-        Option helpOption = getHelpOption();
 
         Option workersOption = new Option(
                 "w",
@@ -119,6 +137,14 @@ public class ArgsParser {
         );
         bodyStringOption.setArgName("request body");
 
+        Option headersStringOption = new Option(
+                "H",
+                "headers",
+                true,
+                "Headers of the request, seperated by semicolons"
+        );
+        headersStringOption.setArgName("headers");
+
         Options options = new Options();
         options.addOption(helpOption);
         options.addOption(workersOption);
@@ -126,6 +152,7 @@ public class ArgsParser {
         options.addOption(numOfRequestsOption);
         options.addOption(httpMethodOption);
         options.addOption(bodyStringOption);
+        options.addOption(headersStringOption);
 
         return options;
     }

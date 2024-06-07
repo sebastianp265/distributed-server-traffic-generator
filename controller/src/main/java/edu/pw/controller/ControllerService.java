@@ -2,6 +2,7 @@ package edu.pw.controller;
 
 import edu.pw.common.SingleTestResult;
 import edu.pw.common.WorkerService;
+import edu.pw.common.requests.SerializableHttpRequest;
 import edu.pw.exceptions.remote.WorkerAccessException;
 import edu.pw.exceptions.remote.WorkerCommunicationException;
 import edu.pw.exceptions.remote.WorkerNotBoundException;
@@ -53,7 +54,7 @@ public class ControllerService implements AutoCloseable {
 
     }
 
-    public List<SingleTestResult> performTests(HttpRequest requestToMake, int numOfRequests)
+    public List<SingleTestResult> performTests(SerializableHttpRequest requestToMake, int numOfRequests)
             throws InterruptedException, ExecutionException {
         sendRequests(requestToMake, numOfRequests);
         List<SingleTestResult> results = collectResults();
@@ -78,7 +79,7 @@ public class ControllerService implements AutoCloseable {
         return testResults;
     }
 
-    private void sendRequests(HttpRequest requestToMake,
+    private void sendRequests(SerializableHttpRequest requestToMake,
                               int numOfRequests) {
         for (int i = 0; i < workers.size(); i++) {
             WorkerService worker = workers.get(i);
