@@ -19,6 +19,12 @@ public class SerializableHttpRequest extends HttpRequest implements Serializable
     private String bodyString;
     private byte[] bodyBytes;
 
+    public SerializableHttpRequest(URI uri, String method, Map<String, List<String>> headerMap) {
+        this.uri = uri;
+        this.method = method;
+        this.headerMap = headerMap;
+    }
+
     public SerializableHttpRequest(URI uri, String method, Map<String, List<String>> headerMap, String bodyString) {
         this.uri = uri;
         this.method = method;

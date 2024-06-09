@@ -6,6 +6,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -18,6 +19,12 @@ public class SerializableHttpRequest extends HttpRequest implements Serializable
 
     private String bodyString;
     private byte[] bodyBytes;
+
+    public SerializableHttpRequest(URI uri, String method, Map<String, List<String>> headerMap) {
+        this.uri = uri;
+        this.method = method;
+        this.headerMap = headerMap;
+    }
 
     public SerializableHttpRequest(URI uri, String method, Map<String, List<String>> headerMap, String bodyString) {
         this.uri = uri;
@@ -34,7 +41,13 @@ public class SerializableHttpRequest extends HttpRequest implements Serializable
     }
 
     public String getBodyString() {
-        return bodyString;
+        if(bodyString != null) {
+            return bodyString;
+        }
+        if(bodyBytes != null) {
+            return new String(bodyBytes);
+        }
+        return null;
     }
 
     public Map<String, List<String>> getHeaderMap() {

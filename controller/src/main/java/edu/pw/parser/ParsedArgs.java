@@ -9,6 +9,7 @@ public record ParsedArgs(List<URI> workerURIs,
                          int numOfRequests,
                          String httpMethod,
                          Map<String, List<String>> headers,
-                         String bodyString) {
+                         String bodyString,
+                         byte[] bodyFileBytes) {
 
 }

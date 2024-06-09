@@ -8,6 +8,16 @@ public class ArgsParser {
 
     }
 
+    public static boolean isHelpOptionPresent(String[] args) {
+        for (String arg : args) {
+            if (arg.equals("-h") || arg.equals("--help")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static ParsedArgs parse(String[] args) throws ParseException {
         Options options = getOptions();
 
@@ -19,7 +29,7 @@ public class ArgsParser {
         return new ParsedArgs(port);
     }
 
-    private static Options getOptions() {
+    public static Options getOptions() {
         Option portOption = new Option(
                 "p",
                 "port",
@@ -29,8 +39,16 @@ public class ArgsParser {
         portOption.setRequired(true);
         portOption.setType(Integer.class);
 
+        Option helpOption = new Option(
+                "h",
+                "help",
+                false,
+                "print this message"
+        );
+
         Options options = new Options();
         options.addOption(portOption);
+        options.addOption(helpOption);
         return options;
     }
 

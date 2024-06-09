@@ -3,7 +3,10 @@ package edu.pw.parser;
 import edu.pw.exceptions.parser.HeadersParseException;
 import org.apache.commons.cli.*;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.util.*;
 
 public class ArgsParser {
@@ -12,7 +15,7 @@ public class ArgsParser {
 
     }
 
-    public static ParsedArgs parse(String[] args) throws ParseException {
+    public static ParsedArgs parse(String[] args) throws ParseException, IOException {
         Options options = getOptions();
 
         CommandLineParser parser = new DefaultParser();
@@ -38,24 +41,69 @@ public class ArgsParser {
 
         int numOfRequests = commandLine.getParsedOptionValue("n");
 
+        if (numOfRequests <= 0) {
+            throw new IllegalArgumentException("Number of requests must be greater than 0");
+        }
+
         String httpMethod = commandLine.getOptionValue("m");
 
         String headersString = commandLine.getOptionValue("H");
-        Map<String, List<String>> headers = headersString != null ? getHeadersMap(headersString) : Collections.emptyMap();
+        Map<String, List<String>> headers = headersString != null ? getHeadersMap(headersString) : new HashMap<>();
 
-        String bodyString = commandLine.getOptionValue("b");
+        if (commandLine.hasOption("t") && commandLine.hasOption("f")) {
+            throw new ParseException("You can send either text or a file, not both");
+        }
+        String bodyString = commandLine.getOptionValue("t");
 
-        return new ParsedArgs(workerURIs, serverURI, numOfRequests, httpMethod, headers, bodyString);
+        byte[] bodyFileBytes = null;
+        if (commandLine.hasOption("f")) {
+            File bodyFile = commandLine.getParsedOptionValue("f");
+            String boundary = String.valueOf(UUID.randomUUID());
+            headers.put("Content-Type", List.of("multipart/form-data; boundary=" + boundary));
+            try {
+                bodyFileBytes = buildMultipartBody(Files.readAllBytes(bodyFile.toPath()), bodyFile.getName(), boundary);
+            } catch (IOException e) {
+                throw new ParseException("Failed to read file: \n" + e.getMessage());
+            }
+        }
+
+        return new ParsedArgs(workerURIs, serverURI, numOfRequests, httpMethod, headers, bodyString, bodyFileBytes);
+    }
+
+    private static byte[] buildMultipartBody(byte[] fileContent, String fileName, String boundary) {
+        String boundaryDelimiter = "--" + boundary + "\r\n";
+        String endBoundaryDelimiter = "\r\n--" + boundary + "--\r\n";
+
+        String filePartHeader = "Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"\r\n" +
+                "Content-Type: application/octet-stream\r\n\r\n";
+
+        byte[] boundaryBytes = boundaryDelimiter.getBytes();
+        byte[] filePartHeaderBytes = filePartHeader.getBytes();
+        byte[] endBoundaryBytes = endBoundaryDelimiter.getBytes();
+
+        int contentLength = boundaryBytes.length + filePartHeaderBytes.length + fileContent.length + endBoundaryBytes.length;
+
+        byte[] multipartBody = new byte[contentLength];
+        int offset = 0;
+        System.arraycopy(boundaryBytes, 0, multipartBody, offset, boundaryBytes.length);
+        offset += boundaryBytes.length;
+        System.arraycopy(filePartHeaderBytes, 0, multipartBody, offset, filePartHeaderBytes.length);
+        offset += filePartHeaderBytes.length;
+        System.arraycopy(fileContent, 0, multipartBody, offset, fileContent.length);
+        offset += fileContent.length;
+        System.arraycopy(endBoundaryBytes, 0, multipartBody, offset, endBoundaryBytes.length);
+
+        return multipartBody;
     }
 
     private static Map<String, List<String>> getHeadersMap(String headersString) throws HeadersParseException {
         Map<String, List<String>> headersMap = new HashMap<>();
 
         headersString = headersString.trim();
-        String[] headers = headersString.split(";");
+        String[] headerLines = headersString.split("\\r?\\n");
 
-        for (String header : headers) {
-            String[] nameValuesPair = header.split(":");
+        for (String headerLine : headerLines) {
+            String[] nameValuesPair = headerLine.split(":");
             if (nameValuesPair.length != 2) {
                 throw new HeadersParseException(headersString);
             }
@@ -73,8 +121,8 @@ public class ArgsParser {
     }
 
     public static boolean isHelpOptionPresent(String[] args) {
-        for(String arg : args) {
-            if(arg.equals("-h") || arg.equals("--help")) {
+        for (String arg : args) {
+            if (arg.equals("-h") || arg.equals("--help")) {
                 return true;
             }
         }
@@ -130,18 +178,26 @@ public class ArgsParser {
         httpMethodOption.setArgName("HTTP method");
 
         Option bodyStringOption = new Option(
-                "b",
-                "body",
+                "t",
+                "text",
                 true,
-                "Body of request to send"
+                "Textual representation of request body to send"
         );
-        bodyStringOption.setArgName("request body");
+        bodyStringOption.setArgName("textual request body");
+
+        Option bodyFileOption = new Option(
+                "f",
+                "file",
+                true,
+                "Path of the file to send"
+        );
+        bodyFileOption.setType(File.class);
 
         Option headersStringOption = new Option(
                 "H",
                 "headers",
                 true,
-                "Headers of the request, seperated by semicolons"
+                "Headers of the request in standard HTTP format"
         );
         headersStringOption.setArgName("headers");
 
@@ -152,6 +208,7 @@ public class ArgsParser {
         options.addOption(numOfRequestsOption);
         options.addOption(httpMethodOption);
         options.addOption(bodyStringOption);
+        options.addOption(bodyFileOption);
         options.addOption(headersStringOption);
 
         return options;

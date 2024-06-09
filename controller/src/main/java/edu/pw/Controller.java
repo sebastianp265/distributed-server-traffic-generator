@@ -29,12 +29,7 @@ public class Controller {
             ParsedArgs parsedArgs = ArgsParser.parse(args);
 
             try (ControllerService controllerService = new ControllerService(parsedArgs.workerURIs())) {
-                SerializableHttpRequest httpRequest = new SerializableHttpRequest(
-                        parsedArgs.serverToTestURI(),
-                        parsedArgs.httpMethod(),
-                        parsedArgs.headers(),
-                        parsedArgs.bodyString()
-                );
+                SerializableHttpRequest httpRequest = getChosenHttpRequest(parsedArgs);
                 List<SingleTestResult> results = controllerService.performTests(httpRequest, parsedArgs.numOfRequests());
                 System.out.println(results);
             }
@@ -48,7 +43,8 @@ public class Controller {
             System.exit(e.exitCode.getValue());
 
         } catch (ExecutionException e) {
-            System.err.println("Encountered an exception while waiting for results from workers");
+            System.err.println("Encountered an exception while waiting for results from workers, message from worker:\n" +
+                    e.getCause().getMessage());
             System.exit(ExitCode.COLLECTING_RESULTS_UNKNOWN_EXCEPTION.getValue());
 
         } catch (InterruptedException e) {
@@ -62,5 +58,32 @@ public class Controller {
             System.err.println(Arrays.toString(e.getStackTrace()));
             System.exit(ExitCode.UNHANDLED_EXCEPTION.getValue());
         }
+    }
+
+    private static SerializableHttpRequest getChosenHttpRequest(ParsedArgs parsedArgs) {
+        SerializableHttpRequest httpRequest;
+        if (parsedArgs.bodyString() != null) {
+            httpRequest = new SerializableHttpRequest(
+                    parsedArgs.serverToTestURI(),
+                    parsedArgs.httpMethod(),
+                    parsedArgs.headers(),
+                    parsedArgs.bodyString()
+            );
+        }
+        else if(parsedArgs.bodyFileBytes() != null) {
+            httpRequest = new SerializableHttpRequest(
+                    parsedArgs.serverToTestURI(),
+                    parsedArgs.httpMethod(),
+                    parsedArgs.headers(),
+                    parsedArgs.bodyFileBytes()
+            );
+        } else {
+            httpRequest = new SerializableHttpRequest(
+                    parsedArgs.serverToTestURI(),
+                    parsedArgs.httpMethod(),
+                    parsedArgs.headers()
+            );
+        }
+        return httpRequest;
     }
 }

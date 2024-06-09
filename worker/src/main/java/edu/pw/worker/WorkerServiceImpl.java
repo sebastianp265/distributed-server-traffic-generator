@@ -1,6 +1,5 @@
 package edu.pw.worker;
 
-import edu.pw.Worker;
 import edu.pw.common.SingleTestResult;
 import edu.pw.common.WorkerService;
 import edu.pw.common.requests.SerializableHttpRequest;
@@ -8,7 +7,6 @@ import edu.pw.common.requests.SerializableHttpRequest;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -47,21 +45,26 @@ public class WorkerServiceImpl extends UnicastRemoteObject implements WorkerServ
                 Date dateAtTestStart = new Date();
 
                 long start = System.currentTimeMillis();
-                client.send(httpRequestToMake, HttpResponse.BodyHandlers.discarding());
+                HttpResponse<String> httpResponse = client.send(httpRequestToMake, HttpResponse.BodyHandlers.ofString());
                 long end = System.currentTimeMillis();
 
                 long requestProcessingTime = end - start;
                 String[] dateParts = dateFormat.format(dateAtTestStart).split(" ");
 
-                SingleTestResult testResult = new SingleTestResult(dateParts[0], dateParts[1], workerURI.toString(), Long.toString(requestProcessingTime));
+                SingleTestResult testResult = new SingleTestResult(
+                        dateParts[0],
+                        dateParts[1],
+                        workerURI.toString(),
+                        Long.toString(requestProcessingTime),
+                        Integer.toString(httpResponse.statusCode()),
+                        httpResponse.body()
+                );
                 results.add(testResult);
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RemoteException("Couldn't send or receive on worker with URI = " + workerURI , e);
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } catch (Exception e) {
-            throw new RemoteException(e.toString());
+            throw new RemoteException("Worker with URI = " + workerURI + " was interrupted", e);
         }
 
         System.out.println("Finished processing");
