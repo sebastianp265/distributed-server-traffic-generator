@@ -8,7 +8,6 @@ import edu.pw.exceptions.remote.WorkerCommunicationException;
 import edu.pw.exceptions.remote.WorkerNotBoundException;
 
 import java.net.URI;
-import java.net.http.HttpRequest;
 import java.rmi.AccessException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -81,15 +80,21 @@ public class ControllerService implements AutoCloseable {
 
     private void sendRequests(SerializableHttpRequest requestToMake,
                               int numOfRequests) {
+        int numOfRequestsPerWorker = numOfRequests / workers.size();
+        int numOfWorkersWithExtraRequest = numOfRequests % workers.size();
+
         for (int i = 0; i < workers.size(); i++) {
             WorkerService worker = workers.get(i);
             URI workerURI = workerURIs.get(i);
 
+            final int finalI = i;
             completionService.submit(() ->
                     worker.measureRequestsProcessingTime(
                             workerURI,
                             requestToMake,
-                            numOfRequests
+                            finalI < numOfWorkersWithExtraRequest ?
+                                    numOfRequestsPerWorker + 1:
+                                    numOfRequestsPerWorker
                     )
             );
         }

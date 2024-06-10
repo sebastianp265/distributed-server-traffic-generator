@@ -39,6 +39,7 @@ public class Worker {
             System.exit(2);
         } catch (RemoteException e) {
             System.err.println("There is an error creating the registry");
+            System.err.println(e.getMessage());
             System.exit(3);
         }
     }
