@@ -67,7 +67,9 @@ public class ArgsParser {
             }
         }
 
-        return new ParsedArgs(workerURIs, serverURI, numOfRequests, httpMethod, headers, bodyString, bodyFileBytes);
+        File outputFile = commandLine.getParsedOptionValue("o");
+
+        return new ParsedArgs(workerURIs, serverURI, numOfRequests, httpMethod, headers, bodyString, bodyFileBytes, outputFile);
     }
 
     private static byte[] buildMultipartBody(byte[] fileContent, String fileName, String boundary) {
@@ -201,6 +203,16 @@ public class ArgsParser {
         );
         headersStringOption.setArgName("headers");
 
+        Option outputFileOption = new Option(
+                "o",
+                "output",
+                true,
+                "Path of the output file"
+        );
+        outputFileOption.setArgName("output file");
+        outputFileOption.setType(File.class);
+        outputFileOption.setRequired(true);
+
         Options options = new Options();
         options.addOption(helpOption);
         options.addOption(workersOption);
@@ -210,6 +222,7 @@ public class ArgsParser {
         options.addOption(bodyStringOption);
         options.addOption(bodyFileOption);
         options.addOption(headersStringOption);
+        options.addOption(outputFileOption);
 
         return options;
     }

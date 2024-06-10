@@ -2,6 +2,7 @@ package edu.pw;
 
 import edu.pw.common.SingleTestResult;
 import edu.pw.common.requests.SerializableHttpRequest;
+import edu.pw.common.writer.TestResultsWriter;
 import edu.pw.controller.ControllerService;
 import edu.pw.exceptions.ExitCode;
 import edu.pw.exceptions.remote.WorkerBaseException;
@@ -10,6 +11,7 @@ import edu.pw.parser.ParsedArgs;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.ParseException;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -31,7 +33,7 @@ public class Controller {
             try (ControllerService controllerService = new ControllerService(parsedArgs.workerURIs())) {
                 SerializableHttpRequest httpRequest = getChosenHttpRequest(parsedArgs);
                 List<SingleTestResult> results = controllerService.performTests(httpRequest, parsedArgs.numOfRequests());
-                System.out.println(results);
+                TestResultsWriter.writeToFile(results, parsedArgs.outputFile());
             }
         } catch (ParseException e) {
             System.err.println(e.getMessage());
@@ -51,6 +53,11 @@ public class Controller {
             System.err.println("Collecting results has been interrupted");
             Thread.currentThread().interrupt();
             System.exit(ExitCode.INTERRUPTED_COLLECTING_RESULTS_EXCEPTION.getValue());
+
+        } catch (IOException e) {
+            System.err.println("Couldn't write result to file, further info:");
+            System.err.println(e.getMessage());
+            System.exit(ExitCode.FILE_WRITE_EXCEPTION.getValue());
 
         } catch (Exception e) {
             System.err.println("Unhandled exception occurred");

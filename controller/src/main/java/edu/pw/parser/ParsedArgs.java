@@ -1,5 +1,6 @@
 package edu.pw.parser;
 
+import java.io.File;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,7 @@ public record ParsedArgs(List<URI> workerURIs,
                          String httpMethod,
                          Map<String, List<String>> headers,
                          String bodyString,
-                         byte[] bodyFileBytes) {
+                         byte[] bodyFileBytes,
+                         File outputFile) {
 
 }
