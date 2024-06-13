@@ -10,6 +10,10 @@ import java.util.List;
 
 public class TestResultsWriter {
 
+    private TestResultsWriter() {
+
+    }
+
     public static void writeToFile(List<SingleTestResult> testResults, File outputFile) throws IOException {
         try (FileWriter fileWriter = new FileWriter(outputFile); BufferedWriter writer = new BufferedWriter(fileWriter)) {
             writer.write("date;time;worker URI;request processing time (ms); status code; response\n");
